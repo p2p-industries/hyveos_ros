@@ -1,0 +1,4 @@
+.vscode/
+.zed/
+
+.devcontainer/devcontainer.env

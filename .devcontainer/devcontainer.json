@@ -1,0 +1,22 @@
+{
+    "name": "P2P Industries ROS 2 Development Container",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "workspaceFolder": "/home/p2p-industries/src/hyveos",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/home/p2p-industries/src/hyveos,type=bind",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-iot.vscode-ros"
+            ]
+        }
+    },
+    "containerEnv": {
+        "DISPLAY": "unix:0",
+        "ROS_AUTOMATIC_DISCOVERY_RANGE": "LOCALHOST",
+        "ROS_DOMAIN_ID": "42"
+    },
+    "postCreateCommand": "rosdep update && rosdep install --from-paths .. --ignore-src -y"
+}
