@@ -1,21 +1,50 @@
 import asyncio
 import rclpy
+import traceback
 from rclpy.node import Node
 
 from hyveos_sdk import Connection, OpenedConnection
 
 from abc import ABC, abstractmethod
 from pathlib import Path
+from signal import SIGINT, SIGTERM
 
 def service_callback(f):
-    async def wrapper(self, request, response):
+    async def inner_wrapper(self, request, response):
         try:
             return await f(self, request, response)
         except Exception as e:
             response.success = False
             response.error = str(e)
             return response
+
+    # Allows calling __await__ repeatedly on awaitables that require waiting for an future before doing so (e.g. asyncio).
+    # This will make asyncio functions compatible with rclpy implementation of async.
+    # See https://github.com/ros2/rclpy/issues/962 for more info
+    async def wrapper(self, request, response):
+        coro = inner_wrapper(self, request, response)
+        try:
+            while True:
+                future = coro.send(None)
+                assert asyncio.isfuture(future) or future is None, "Unexpected awaitable behavior. Only use rclpy or asyncio awaitables."
+                if future is None: # coro is rclpy-style awaitable; await is expected to be called repeatedly
+                    await asyncio.sleep(0)
+                    continue
+                while not future.done(): # coro is asyncio-style awaitable; stop calling await until future is done.
+                    await asyncio.sleep(0) # yields None
+                future.result()
+        except StopIteration as e:
+            return e.value
+
     return wrapper
+
+def prepare_data(data: bytes | list[bytes]) -> bytes:
+    if isinstance(data, bytes):
+        return data
+    elif isinstance(data, list):
+        return b''.join(data)
+    else:
+        raise ValueError('Invalid data')
 
 class BridgeClient(ABC):
     @abstractmethod
@@ -28,16 +57,21 @@ class BridgeClient(ABC):
 
 class Bridge(Node):
     connection: OpenedConnection
-    clients: list[BridgeClient]
+    bridge_clients: list[BridgeClient]
 
     def __init__(self, connection: OpenedConnection):
         super().__init__('hyveos_bridge')
 
+        from .reqres import ReqResClient
+
         self.connection = connection
-        self.clients = [client(self) for client in BridgeClient.__subclasses__()]
+        self.bridge_clients = [client(self) for client in BridgeClient.__subclasses__()]
+
+        for client in self.bridge_clients:
+            self.get_logger().info(f'Initializing {client.__class__.__name__}')
 
     async def run(self):
-        coroutines = [client.run() for client in self.clients]
+        coroutines = [client.run() for client in self.bridge_clients]
         await asyncio.gather(*coroutines)
 
 async def ros_loop(node: Node):
@@ -60,17 +94,30 @@ async def async_main(args=None):
     shared_dir_path = find_bridge_path('files')
 
     async with Connection(socket_path=socket_path, shared_dir_path=shared_dir_path) as connection:
-        rclpy.init(args=args)
+        try:
+            rclpy.init(args=args)
 
-        bridge = Bridge(connection)
+            bridge = Bridge(connection)
 
-        await asyncio.gather(ros_loop(bridge), bridge.run())
-
-        bridge.destroy_node()
-        rclpy.shutdown()
+            await asyncio.gather(ros_loop(bridge), bridge.run())
+        except asyncio.CancelledError:
+            print('Exiting...')
+        except Exception as e:
+            traceback.print_exc()
+        finally:
+            if rclpy.ok():
+                bridge.destroy_node()
+                rclpy.shutdown()
 
 def main(args=None):
-    asyncio.run(async_main(args=args))
+    loop = asyncio.get_event_loop()
+    main_task = asyncio.ensure_future(async_main(args=args))
+    for signal in [SIGINT, SIGTERM]:
+        loop.add_signal_handler(signal, main_task.cancel)
+    try:
+        loop.run_until_complete(main_task)
+    finally:
+        loop.close()
 
 if __name__ == '__main__':
     main()
