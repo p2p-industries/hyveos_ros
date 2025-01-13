@@ -58,3 +58,6 @@ class DHTClient(BridgeClient):
 
         response.success = True
         return response
+
+    async def run(self):
+        pass
