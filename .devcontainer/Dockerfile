@@ -12,6 +12,6 @@ RUN rm devcontainer.env
 
 ENV SHELL=/bin/bash
 
-WORKDIR /home/p2p-industries/src/hyveos
+WORKDIR /home/p2p-industries/src/hyveos_bridge
 
 CMD ["/bin/bash"]

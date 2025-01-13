@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: src/hyveos
+          path: src/hyveos_bridge
       - uses: actions/checkout@v4
         with:
           repository: p2p-industries/hyveos_ros_msgs
