@@ -3,8 +3,8 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
-    "workspaceFolder": "/home/p2p-industries/src/hyveos",
-    "workspaceMount": "source=${localWorkspaceFolder},target=/home/p2p-industries/src/hyveos,type=bind",
+    "workspaceFolder": "/home/p2p-industries/src/hyveos_bridge",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/home/p2p-industries/src/hyveos_bridge,type=bind",
     "customizations": {
         "vscode": {
             "extensions": [

@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'hyveos'
+package_name = 'hyveos_bridge'
 
 setup(
     name=package_name,
@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'bridge = hyveos.bridge:main',
+            'bridge = hyveos_bridge.bridge:main',
         ],
     },
 )
