@@ -52,6 +52,7 @@ def prepare_data(data: bytes | list[bytes]) -> bytes:
 
 
 class BridgeClient(ABC):
+
     @abstractmethod
     def __init__(self, node: 'Bridge'):
         pass
