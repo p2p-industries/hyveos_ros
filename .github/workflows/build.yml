@@ -30,7 +30,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: p2p-industries/hyveos_ros_msgs
-          ssh-key: ${{ secrets.MSGS_REPO_DEPLOY_KEY }}
           path: src/hyveos_msgs
       - name: Build and test workspace
         uses: ichiro-its/ros2-ws-action@v1.0.1
