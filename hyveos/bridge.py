@@ -69,7 +69,10 @@ class Bridge(Node):
     def __init__(self, connection: OpenedConnection):
         super().__init__('hyveos_bridge')
 
-        from .reqres import ReqResClient as _  # noqa: F401
+        from .dht import DHTClient              # noqa: F401
+        from .discovery import DiscoveryClient  # noqa: F401
+        from .pubsub import PubsubClient        # noqa: F401
+        from .reqres import ReqResClient        # noqa: F401
 
         self.connection = connection
         self.bridge_clients = [client(self) for client in BridgeClient.__subclasses__()]
