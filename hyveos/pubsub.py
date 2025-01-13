@@ -126,7 +126,7 @@ class PubsubClient(BridgeClient):
 
         async with self.subscriptions_lock:
             if topic not in self.subscriptions:
-                stream = self.gos.subscribe(topic)
+                stream = await self.gos.subscribe(topic)
                 self.subscriptions[topic] = Subscription(
                     stream,
                     self.received_messages_publisher,
