@@ -3,7 +3,7 @@ import asyncio
 from hyveos_msgs.msg import ReceivedRequest
 from hyveos_msgs.srv import RequestSubscription, Respond, SendRequest
 from hyveos_sdk import ManagedStream, RequestResponseService
-from hyveos_sdk.protocol.script_pb2 import RecvRequest
+from hyveos_sdk.protocol.bridge_pb2 import RecvRequest
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.publisher import Publisher
 

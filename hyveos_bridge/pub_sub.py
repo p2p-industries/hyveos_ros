@@ -2,8 +2,8 @@ import asyncio
 
 from hyveos_msgs.msg import ReceivedPubsubMessage
 from hyveos_msgs.srv import PubsubPublish, PubsubSubscription
-from hyveos_sdk import GossipSubService, ManagedStream
-from hyveos_sdk.protocol.script_pb2 import GossipSubRecvMessage
+from hyveos_sdk import ManagedStream, PubSubService
+from hyveos_sdk.protocol.bridge_pb2 import PubSubRecvMessage
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.publisher import Publisher
 
@@ -17,7 +17,7 @@ class Subscription:
 
     def __init__(
         self,
-        stream: ManagedStream[GossipSubRecvMessage],
+        stream: ManagedStream[PubSubRecvMessage],
         publisher: Publisher,
         logger: RcutilsLogger
     ):
@@ -25,7 +25,7 @@ class Subscription:
         self.task = asyncio.create_task(self.run(stream, publisher))
         self.logger = logger
 
-    async def run(self, stream: ManagedStream[GossipSubRecvMessage], publisher: Publisher):
+    async def run(self, stream: ManagedStream[PubSubRecvMessage], publisher: Publisher):
         async with stream:
             iterator = stream.__aiter__()
 
@@ -65,7 +65,7 @@ class Subscription:
 
 class PubsubClient(BridgeClient):
     logger: RcutilsLogger
-    gos: GossipSubService
+    pub_sub: PubSubService
     subscriptions: dict[str, Subscription]
     subscriptions_lock: asyncio.Lock
 
@@ -95,7 +95,7 @@ class PubsubClient(BridgeClient):
         )
 
         self.logger = node.get_logger()
-        self.gos = node.connection.get_gossip_sub_service()
+        self.pub_sub = node.connection.get_pub_sub_service()
         self.subscriptions = {}
         self.subscriptions_lock = asyncio.Lock()
 
@@ -109,7 +109,7 @@ class PubsubClient(BridgeClient):
 
         data = prepare_data(request.data)
 
-        msg_id = await self.gos.publish(data, request.topic)
+        msg_id = await self.pub_sub.publish(data, request.topic)
 
         response.success = True
         response.msg_id = msg_id
@@ -126,7 +126,7 @@ class PubsubClient(BridgeClient):
 
         async with self.subscriptions_lock:
             if topic not in self.subscriptions:
-                stream = await self.gos.subscribe(topic)
+                stream = await self.pub_sub.subscribe(topic)
                 self.subscriptions[topic] = Subscription(
                     stream,
                     self.received_messages_publisher,
